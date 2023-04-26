@@ -43,7 +43,7 @@ namespace LearnOpenGLFramework {
         Mesh(vector<Vertex>&& vertices, vector<unsigned int>&& indices, vector<Texture>&& textures);
         Mesh();
         void draw(const Shader& shader) const;
-    private:
+    public:
         unsigned int VAO, VBO, EBO;
         void setupMesh();
     };
@@ -53,7 +53,7 @@ namespace LearnOpenGLFramework {
         Model(const string& path);
 
         void draw(const Shader& shader) const;
-    private:
+    public:
         static std::map<string, Texture> textures_loaded;
 
         vector<Mesh> meshes;

@@ -34,6 +34,7 @@ add_subdirectory(src/face_culling)
 add_subdirectory(src/frame_buffers)
 add_subdirectory(src/cubemap)
 add_subdirectory(src/geometry_shader)
+add_subdirectory(src/instancing)
 
 # glm
 add_subdirectory(deps/glm)
