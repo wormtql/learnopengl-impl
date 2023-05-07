@@ -35,6 +35,8 @@ add_subdirectory(src/frame_buffers)
 add_subdirectory(src/cubemap)
 add_subdirectory(src/geometry_shader)
 add_subdirectory(src/instancing)
+add_subdirectory(src/shadow_mapping)
+add_subdirectory(src/point_shadows)
 
 # glm
 add_subdirectory(deps/glm)

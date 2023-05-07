@@ -28,6 +28,8 @@ namespace LearnOpenGLFramework {
 
         void setUniformVec3(const string& name, float a, float b, float c) const;
 
+        void setUniformVec3_2(const string& name, glm::vec3 value) const;
+
         void setUniform1i(const string& name, unsigned int value) const;
 
         void setUniformMatrix4f(const string& name, const glm::mat4& value) const;

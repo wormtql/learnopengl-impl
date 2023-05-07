@@ -166,6 +166,11 @@ namespace LearnOpenGLFramework {
         glUniform3f(location, a, b, c);
     }
 
+    void Shader::setUniformVec3_2(const string &name, glm::vec3 value) const {
+        auto location = glGetUniformLocation(this->shaderID, name.c_str());
+        glUniform3f(location, value.x, value.y, value.z);
+    }
+
     void Shader::setUniform1i(const string &name, unsigned int value) const {
         auto location = glGetUniformLocation(this->shaderID, name.c_str());
         glUniform1i(location, value);
