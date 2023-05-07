@@ -181,6 +181,11 @@ namespace LearnOpenGLFramework {
         glUniform1f(location, value);
     }
 
+    void Shader::setUniform1b(const string &name, bool value) const {
+        auto location = glGetUniformLocation(this->shaderID, name.c_str());
+        glUniform1i(location, value);
+    }
+
     void Shader::setUniformMatrix4f(const string &name, const glm::mat4 &value) const {
         auto location = glGetUniformLocation(this->shaderID, name.c_str());
         glUniformMatrix4fv(location, 1, false, glm::value_ptr(value));

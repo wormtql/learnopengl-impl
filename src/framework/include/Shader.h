@@ -36,6 +36,8 @@ namespace LearnOpenGLFramework {
 
         void setUniform1f(const string& name, float value) const;
 
+        void setUniform1b(const string& name, bool value) const;
+
         void use() const;
 
         [[nodiscard]] unsigned int getID() const {

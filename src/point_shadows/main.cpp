@@ -138,66 +138,91 @@ int main() {
 
     const unsigned int SHADOW_WIDTH = 1024;
     const unsigned int SHADOW_HEIGHT = 1024;
+    glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 
-    unsigned int depthMap;
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    unsigned int depthCubemap;
+    glGenTextures(1, &depthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+    for (int i = 0; i < 6; i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    auto depthShader = LearnOpenGLFramework::Shader(
-            "shadow_mapping/simpleDepthShader",
-            "shadow_mapping/emptyFragmentShader"
-            );
-    auto quadShader = LearnOpenGLFramework::Shader(
-            "shadow_mapping/renderQuadVertexShader",
-            "shadow_mapping/renderQuadFragmentShader"
-    );
-    auto sceneShader = LearnOpenGLFramework::Shader(
-            "shadow_mapping/shadowVertexShader",
-            "shadow_mapping/shadowFragmentShader"
-    );
+    float aspect = (float) SHADOW_WIDTH / SHADOW_HEIGHT;
+    float near = 1.0f;
+    float far = 25.0f;
+    glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
-    glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+    vector<glm::mat4> shadowTransforms;
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+
+    auto shadowShader = LearnOpenGLFramework::Shader(
+            "point_shadows/shadowVertexShader",
+            "point_shadows/shadowGeometryShader",
+            "point_shadows/shadowFragmentShader"
+            );
+    auto sceneShader = LearnOpenGLFramework::Shader(
+            "point_shadows/sceneVertexShader",
+            "point_shadows/sceneFragmentShader"
+    );
 
     // geometries
     LearnOpenGLFramework::Cube cube;
     LearnOpenGLFramework::Quad quad;
 
     auto renderScene = [&] (const LearnOpenGLFramework::Shader& shader) {
-        // floor
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0, -0.5f, 0.0));
-        model = glm::scale(model, glm::vec3(25.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
+        // room cube
+        glm::mat4 model(1.0f);
+        model = glm::scale(model, glm::vec3(10.0));
         shader.setUniformMatrix4f("model", model);
-        quad.draw(shader);
+//        glDisable(GL_CULL_FACE);
+        shader.setUniform1b("flip_normal", true);
+        cube.draw(shader);
+        shader.setUniform1b("flip_normal", false);
+//        glEnable(GL_CULL_FACE);
         // cubes
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.5f));
+        model = glm::translate(model, glm::vec3(4.0f, -3.5f, 0.0));
         shader.setUniformMatrix4f("model", model);
         cube.draw(shader);
 
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
-        model = glm::scale(model, glm::vec3(0.5f));
+        model = glm::translate(model, glm::vec3(2.0f, 3.0f, 1.0));
+        model = glm::scale(model, glm::vec3(1.5));
         shader.setUniformMatrix4f("model", model);
         cube.draw(shader);
 
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0));
-        model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-        model = glm::scale(model, glm::vec3(0.25));
+        model = glm::translate(model, glm::vec3(-3.0f, -1.0f, 0.0));
+        shader.setUniformMatrix4f("model", model);
+        cube.draw(shader);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-1.5f, 1.0f, 1.5));
+        shader.setUniformMatrix4f("model", model);
+        cube.draw(shader);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-1.5f, 2.0f, -3.0));
+        model = glm::rotate(model, 60.0f, glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+        model = glm::scale(model, glm::vec3(1.5));
         shader.setUniformMatrix4f("model", model);
         cube.draw(shader);
     };
@@ -216,14 +241,13 @@ int main() {
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);
-        depthShader.use();
-        float near_plane = 1.0f;
-        float far_plane = 7.5f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-        glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-        depthShader.setUniformMatrix4f("lightSpaceMatrix", lightSpaceMatrix);
-        renderScene(depthShader);
+        shadowShader.use();
+        for (int i = 0; i < 6; i++) {
+            shadowShader.setUniformMatrix4f(concat("shadowMatrices[", i, "]"), shadowTransforms[i]);
+        }
+        shadowShader.setUniformVec3_2("lightPos", lightPos);
+        shadowShader.setUniform1f("far_plane", far);
+        renderScene(shadowShader);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // render scene
@@ -236,15 +260,15 @@ int main() {
         glm::mat4 view(1.0f);
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         sceneShader.setUniformMatrix4f("view", view);
-        sceneShader.setUniformMatrix4f("lightSpaceMatrix", lightSpaceMatrix);
         sceneShader.setUniformVec3_2("lightPos", lightPos);
+        sceneShader.setUniform1f("far_plane", far);
         sceneShader.setUniformVec3_2("viewPos", cameraPos);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, woodTexture);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
         sceneShader.setUniform1i("diffuseTexture", 0);
-        sceneShader.setUniform1i("shadowMap", 1);
+        sceneShader.setUniform1i("depthMap", 1);
         renderScene(sceneShader);
 
 //        glViewport(0, 0, 800, 600);
