@@ -9,7 +9,7 @@
 
 namespace LearnOpenGLFramework {
     class Quad {
-    private:
+    public:
         static float vertices[];
         static unsigned int indices[];
 
