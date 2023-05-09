@@ -180,8 +180,8 @@ int main() {
     glEnable(GL_BLEND);
 
     auto sceneShader = LearnOpenGLFramework::Shader(
-            "normal_mapping/vertexShader",
-            "normal_mapping/fragmentShader"
+            "parallax_mapping/vertexShader",
+            "parallax_mapping/fragmentShader"
     );
 
     LearnOpenGLFramework::Quad quad;
@@ -202,10 +202,11 @@ int main() {
 
     // brick texture
     LearnOpenGLFramework::TextureHelper textureHelper;
-    auto brickWall = textureHelper.createTexture("E:\\CLionProjects\\learnopengl\\images\\brickwall.jpg", GL_TEXTURE0, false, true);
-    auto brickWallNormal = textureHelper.createTexture("E:\\CLionProjects\\learnopengl\\images\\brickwall_normal.jpg", GL_TEXTURE1, false, true);
+    auto diffuseMap = textureHelper.createTexture(R"(E:\CLionProjects\learnopengl\images\bricks2.jpg)", GL_TEXTURE0, false, true);
+    auto normalMap = textureHelper.createTexture(R"(E:\CLionProjects\learnopengl\images\bricks2_normal.jpg)", GL_TEXTURE1, false, true);
+    auto parallaxMap = textureHelper.createTexture(R"(E:\CLionProjects\learnopengl\images\bricks2_disp.jpg)", GL_TEXTURE2, false, true);
 
-    glm::vec3 lightPos(1.0f, 0.0f, -0.3f);
+    glm::vec3 lightPos(0.5f, 1.0f, 0.3f);
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -226,16 +227,19 @@ int main() {
         sceneShader.setUniformVec3_2("lightPos", lightPos);
         sceneShader.setUniformVec3_2("viewPos", cameraPos);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, brickWall);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, brickWallNormal);
+        glBindTexture(GL_TEXTURE_2D, normalMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, parallaxMap);
         sceneShader.setUniform1i("diffuseTexture", 0);
         sceneShader.setUniform1i("normalTexture", 1);
+        sceneShader.setUniform1i("depthMap", 2);
 
         glm::mat4 model(1.0f);
 //        model = glm::scale(model, glm::vec3(10.0));
-        model = glm::rotate(model, glm::radians((float)glfwGetTime() * 10), glm::vec3(1.0, 1.0, 0.0));
-//        model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0, 1.0, 0.0));
+//        model = glm::rotate(model, glm::radians(45.f), glm::vec3(1.0, 1.0, 0.0));
+        model = glm::rotate(model, glm::radians(10.0f * (float) glfwGetTime()), glm::vec3(1.0, 1.0, 0.0));
         sceneShader.setUniformMatrix4f("model", model);
 
         quad.draw(sceneShader);
