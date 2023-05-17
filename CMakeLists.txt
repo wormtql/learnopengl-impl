@@ -39,6 +39,7 @@ add_subdirectory(src/shadow_mapping)
 add_subdirectory(src/point_shadows)
 add_subdirectory(src/normal_mapping)
 add_subdirectory(src/parallax_mapping)
+add_subdirectory(src/hdr)
 
 # glm
 add_subdirectory(deps/glm)
